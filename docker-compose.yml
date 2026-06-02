@@ -1,0 +1,5 @@
+services:
+  mail-digest:
+    build: .
+    env_file: .env
+    restart: "no"  # lancé à la demande par cron
