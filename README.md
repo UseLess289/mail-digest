@@ -15,7 +15,7 @@ A self-hosted Docker service that fetches your emails via IMAP, summarizes them 
 **1. Clone and configure**
 
 ```bash
-git clone https://github.com/yourname/mail-digest
+git clone https://github.com/UseLess298/mail-digest
 cd mail-digest
 cp .env.example .env
 # Fill in your credentials
