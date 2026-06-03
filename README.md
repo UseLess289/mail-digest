@@ -48,7 +48,7 @@ You should receive a Telegram message within seconds.
 
 ## Scheduling
 
-Add to your crontab (`crontab -e`) to run at 8am, noon, and 6pm:
+Add to your crontab (`crontab -e`) to run at 8am, noon, and 6pm (time is set for UTC +0):
 
 ```cron
 0 8  * * * cd /path/to/mail-digest && docker compose run --rm mail-digest
@@ -66,4 +66,4 @@ Add to your crontab (`crontab -e`) to run at 8am, noon, and 6pm:
 
 ## Adding more mailboxes
 
-Incomming...
+You can configure various email boxes with configuring .env and import IMAP credentials in python.
