@@ -145,26 +145,27 @@ def send_telegram(text):
         json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"},
         timeout=10,
     )
-
-if __name__ == "__main__":
+def run_digest():
     accounts = [
-        {"host": "imap.gmail.com",    "user": os.getenv("GMAIL_USER"),  "password": os.getenv("GMAIL_APP_PASSWORD"), "label": "Gmail"},
-        {"host": "imap.mail.me.com",  "user": os.getenv("ICLOUD_USER"), "password": os.getenv("ICLOUD_APP_PASSWORD"),"label": "iCloud"},
-        {"host": os.getenv("UNI_HOST",""), "user": os.getenv("UNI_USER",""), "password": os.getenv("UNI_PASSWORD",""), "label": "Université"},
+        {"host": "imap.gmail.com",       "user": os.getenv("GMAIL_USER"),         "password": os.getenv("GMAIL_APP_PASSWORD"),  "label": "Gmail"},
+        {"host": "imap.mail.me.com",      "user": os.getenv("ICLOUD_USER",""),     "password": os.getenv("ICLOUD_APP_PASSWORD",""),"label": "iCloud"},
+        {"host": os.getenv("UNI_HOST",""),"user": os.getenv("UNI_USER",""),        "password": os.getenv("UNI_PASSWORD",""),      "label": "Université"},
     ]
 
     all_emails = []
     for acc in accounts:
-        if acc["user"] and acc["host"]:  # ignore les comptes non configurés
+        if acc["user"] and acc["host"]:
             try:
                 all_emails.extend(fetch_recent_emails(**acc))
             except Exception as e:
                 print(f"[{acc['label']}] Erreur IMAP : {e}")
 
     now = datetime.now().strftime("%d/%m à %Hh%M")
-
     if not all_emails:
         send_telegram(f"📭 <b>Digest — {now}</b>\n\nAucun nouveau mail ces {HOURS_LOOKBACK}h.")
     else:
         summary = summarize(all_emails)
         send_telegram(f"📬 <b>Digest — {now}</b> ({len(all_emails)} mails)\n\n{summary}")
+
+if __name__ == "__main__":
+    run_digest()
