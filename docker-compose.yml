@@ -2,4 +2,10 @@ services:
   mail-digest:
     build: .
     env_file: .env
-    restart: "no"  # lancé à la demande par cron
+    restart: "no"        # lancé par cron uniquement
+
+  bot:
+    build: .
+    env_file: .env
+    restart: always      # tourne en permanence
+    command: python ./bot.py
