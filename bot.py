@@ -4,7 +4,7 @@ from collections import deque
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from digest import run_digest, GROQ_API_KEY  # on récupère aussi la clé
+from digest import run_digest, GROQ_API_KEY
 from groq import Groq
 
 load_dotenv()
@@ -12,9 +12,7 @@ load_dotenv()
 TELEGRAM_TOKEN   = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# Durée de vie d'un message (auto-suppression)
-MESSAGE_LIFETIME = 300  # 5 secondes? Non, 300 secondes = 5 minutes
-# On conserve les emails 6h = 21600 secondes
+MESSAGE_LIFETIME = 300
 EMAIL_TTL = 21600
 
 # Initialisation du client Groq
@@ -58,38 +56,33 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_and_store(context, update.effective_chat.id, summary, parse_mode="HTML")
         await status_msg.delete()
     except Exception as e:
-        await status_msg.edit_text(f"❌ Erreur : {e}")
+        await status_msg.edit_text(f"Error : {e}")
 
 async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(update.effective_chat.id) != TELEGRAM_CHAT_ID:
         return
     if not groq_client:
-        await update.message.reply_text("❌ Groq n'est pas configuré (clé API manquante).")
+        await update.message.reply_text("Error : API key missing")
         return
-    
-    # Vérifier si des emails sont en mémoire
     emails = context.user_data.get('last_emails')
     if not emails:
-        await update.message.reply_text("Aucun email en mémoire. Utilisez d'abord /digest.")
+        await update.message.reply_text("You should run /digest first")
         return
-    
-    # Vérifier l'expiration (6h)
+
     last_time = context.user_data.get('last_emails_time', 0)
     if asyncio.get_event_loop().time() - last_time > EMAIL_TTL:
-        await update.message.reply_text("Les emails en mémoire ont expiré (plus de 6h). Refaites /digest.")
+        await update.message.reply_text("You should run /digest (emails disapeared)")
         return
-    
-    # Extraire la question
+
     question = update.message.text.replace('/ask', '', 1).strip()
     if not question:
-        await update.message.reply_text("Veuillez poser une question après /ask, exemple :\n/ask quel est le code de vérification ?")
+        await update.message.reply_text("Usage : /asl [Question]. Example : /ask what's the verification code for xbox")
         return
-    
-    # Construire le prompt avec les emails (limiter aux 15 premiers pour éviter token trop long)
+
     emails_text = ""
     for i, e in enumerate(emails[:15]):
-        emails_text += f"\n📧 Email {i+1} :\nDe: {e['from']}\nSujet: {e['subject']}\nDate: {e['date']}\nExtrait: {e['body'][:500]}\n"
-    
+        emails_text += f"\nEmail {i+1} :\nDe: {e['from']}\nSujet: {e['subject']}\nDate: {e['date']}\nExtrait: {e['body'][:500]}\n"
+
     prompt = f"""Voici des emails récents (moins de 6h). Réponds précisément à la question posée en français, en te basant uniquement sur ces emails. Si l'information n'est pas présente, dis-le clairement.
 
 Emails :
@@ -106,10 +99,9 @@ Réponse :"""
             temperature=0.2,
         )
         answer = completion.choices[0].message.content
-        # Envoyer la réponse (sans auto-suppression pour laisser le temps de lire)
-        await update.message.reply_text(f"🤖 <b>Réponse</b> :\n{answer}", parse_mode="HTML")
+        await update.message.reply_text(f"<b>Answer :</b> :\n{answer}", parse_mode="HTML")
     except Exception as e:
-        await update.message.reply_text(f"❌ Erreur lors de la requête Groq : {e}")
+        await update.message.reply_text(f"Error with Groq : {e}")
 
 async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(update.effective_chat.id) != TELEGRAM_CHAT_ID:
@@ -117,7 +109,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     bot_messages = context.bot_data.get('bot_messages', [])
     if not bot_messages:
-        await update.message.reply_text("Aucun message du bot à supprimer.")
+        await update.message.reply_text("No message to delete")
         return
     deleted = 0
     for mid in list(bot_messages):
@@ -127,7 +119,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
     context.bot_data['bot_messages'] = deque(maxlen=200)
-    await update.message.reply_text(f"✅ {deleted} messages du bot supprimés.")
+    await update.message.reply_text(f" {deleted} messages deleted")
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(update.effective_chat.id) != TELEGRAM_CHAT_ID:
@@ -145,4 +137,3 @@ def main():
     app.add_handler(CommandHandler("digest", cmd_digest))
     app.add_handler(CommandHandler("ask", cmd_ask))
     app.add_handler(CommandHandler("clean", cmd_clean))
-    a
